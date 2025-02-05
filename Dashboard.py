@@ -9,7 +9,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 import requests
 
-st.set_page_config(layout="wide")
+st.set_page_config(layout="wide") # Make the content fit the entire screen
 
 def load_css(file_name):
     with open(file_name) as f:
@@ -56,7 +56,6 @@ def fetch_fundamental_data(ticker):
 def fetch_live_news(api_key, query):
     url = f'https://newsapi.org/v2/everything?q={query}&sortBy=publishedAt&apiKey={api_key}'
     response = requests.get(url)
-    response.raise_for_status()  # Raise an exception for HTTP errors
     news_data = response.json()
     return news_data['articles'] if 'articles' in news_data else []
 
@@ -175,33 +174,26 @@ def main():
         predictions = make_predictions(model, X_test, scaler)
         actual_prices = scaler.inverse_transform(y_test.reshape(-1, 1))
 
-        st.subheader("Year-wise Filter")
-        year_filter = st.selectbox("Select Year", sorted(opening_price_data['Year'].unique()))
-        yearly_data = opening_price_data[opening_price_data['Year'] == year_filter]
-        yearly_actual_prices = actual_prices[yearly_data.index[:len(actual_prices)]]
-        yearly_predictions = predictions[yearly_data.index[:len(predictions)]]
-
-        plot_predictions(yearly_actual_prices, yearly_predictions, f"Daily Opening Price Prediction for {year_filter}")
+        plot_predictions(actual_prices, predictions, "Daily Opening Price Prediction")
         
         st.subheader("Opening Price Data")
-        filtered_data = opening_price_data[opening_price_data['Year'] == year_filter]
+        filtered_data = opening_price_data[opening_price_data['Year'] == 2025]
         st.dataframe(filtered_data, height=200)
 
+    with col2:
         st.subheader(f"About {company}")
         company_info = fetch_company_info(ticker)
         st.write(company_info)
 
         st.subheader(f"{company} Performance")
         df_stock = fetch_stock_data(ticker)
-        year_data = df_stock[df_stock.index.year == year_filter]
+        year_data = df_stock[df_stock.index.year == 2025]
         st.slider("Volume Traded", min_value=int(year_data['Volume'].min()), max_value=int(year_data['Volume'].max()), value=int(year_data['Volume'].mean()), step=1)
 
-# Third column: Live NEWS and EPS, PE, IPO KPI
-    news_api_key = "31739ed855eb4759908a898ab99a43e7"
-    query = company
-    
     with col3:
         st.subheader("Live News")
+        news_api_key = "31739ed855eb4759908a898ab99a43e7"
+        query = company
         news_articles = fetch_live_news(news_api_key, query)
         news_text = ""
         for article in news_articles:
@@ -212,4 +204,8 @@ def main():
         eps_pe_ipo_kpi = fetch_eps_pe_ipo_kpi(ticker)
         kpi_info = f"*EPS: {eps_pe_ipo_kpi['EPS']}  |  **PE Ratio: {eps_pe_ipo_kpi['PE Ratio']}  |  **IPO Date: {eps_pe_ipo_kpi['IPO Date']}  |  **KPI*: {eps_pe_ipo_kpi['KPI']}  |  **Current Price*: {eps_pe_ipo_kpi['Current Price']}"
         st.write(kpi_info)
-    
+
+    st.write("Data fetched successfully! Use this for further analysis and prediction.")
+
+if __name__ == "__main__":
+    main()
